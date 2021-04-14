@@ -10,7 +10,7 @@
 class RTFLib 
 {
 public:
-    RTFLib() {};
+    RTFLib() { init(); };
     ~RTFLib() {};
 
     ERROR_TYPE openRTF(const char* filename, const char* fonts, const char* colors);
