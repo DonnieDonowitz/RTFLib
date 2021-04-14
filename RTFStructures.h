@@ -24,8 +24,8 @@ struct SECTION_FORMAT
     int marginTop;
     int marginBottom;
     int gutterWidth;
-    int numberOffsetX;
-    int numberOffsetY;
+    int headerOffset;
+    int footerOffset;
     int colsNumber;
     int colsDistance;
 
@@ -69,7 +69,6 @@ struct SHADING_FORMAT
 
 struct CHARACTER_FORMAT
 {
-    int animated;
     int backgroundColor;
     int foregroundColor;
     int scale;
@@ -79,6 +78,7 @@ struct CHARACTER_FORMAT
     int kerning;
     int underline;
 
+    bool isAnimated;
     bool isBold;
     bool isCapital;
     bool isEmboss;
