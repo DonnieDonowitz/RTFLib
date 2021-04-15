@@ -13,7 +13,7 @@ public:
     RTFLib() { init(); };
     ~RTFLib() {};
 
-    ERROR_TYPE openRTF(const char* filename, char* fonts, char* colors);
+    ERROR_TYPE openRTF(const char* filename, const char* fonts, const char* colors);
     ERROR_TYPE closeRTF();
 
     inline DOCUMENT_FORMAT* getDocumentFormat()             { return &documentFormat; }
@@ -62,8 +62,8 @@ protected:
     ERROR_TYPE writeFooterFormat();
     ERROR_TYPE writeHeaderFormat();
 
-    void setFontTable(char* fonts);
-    void setColorTable(char* colors);
+    void setFontTable(const char* fonts);
+    void setColorTable(const char* colors);
     void setDefaultFormats();
 
     const char* binaryToHex(unsigned char* binary, int size);
