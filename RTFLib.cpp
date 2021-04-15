@@ -1,6 +1,6 @@
 #include "RTFLib.h"
 
-ERROR_TYPE RTFLib::openRTF(const char* filename, const char* fonts, const char* colors)
+ERROR_TYPE RTFLib::openRTF(const char* filename, char* fonts, char* colors)
 {
     if(fonts && strcmp(fonts, "") != 0) 
     {
@@ -934,7 +934,7 @@ ERROR_TYPE RTFLib::writeFooterFormat()
     return SUCCESS;
 }  
 
-void RTFLib::setFontTable(const char* fonts)
+void RTFLib::setFontTable(char* fonts)
 {
     char sep[] = ";";
     char fontTableEntry[4096];
@@ -951,7 +951,7 @@ void RTFLib::setFontTable(const char* fonts)
     }
 }  
 
-void RTFLib::setColorTable(const char* colors)
+void RTFLib::setColorTable(char* colors)
 {
     char sep[] = ";";
     char colorTableEntry[4096];
