@@ -166,7 +166,7 @@ ERROR_TYPE RTFLib::startTableCell(int colNum, int rightMargin)
 
     if(tableCellFormat.hasShading)
     {
-        sprintf(text, "%s\\clshdgn%d\\clcfpat%d\\clcbpat%d", getShadingName(tableCellFormat.shading.type), tableCellFormat.shading.intensity, tableCellFormat.shading.fillColor, tableCellFormat.shading.backgroundColor);
+        sprintf(text, "%s\\clshdgn%d\\clcfpat%d\\clcbpat%d", getShadingName(tableCellFormat.shading.type, true), tableCellFormat.shading.intensity, tableCellFormat.shading.fillColor, tableCellFormat.shading.backgroundColor);
     }
 
     sprintf(text, "\\cellx%d", colNum == 0 ? colNum : rightMargin);
