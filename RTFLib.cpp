@@ -122,6 +122,60 @@ ERROR_TYPE RTFLib::endTableRow()
 
 ERROR_TYPE RTFLib::startTableCell(int colNum, int rightMargin)
 {
+    char text[4096];
+
+    strcat(text, "\n\\tcelld");
+
+    switch(tableCellFormat.textAlignment)
+    {
+        case TABLE_CELL_TEXT_ALIGN_TOP:         strcat(text, "\\clvertalt"); break;
+        case TABLE_CELL_TEXT_ALIGN_CENTER:      strcat(text, "\\clvertalc"); break;
+        case TABLE_CELL_TEXT_ALIGN_BOTTOM:      strcat(text, "\\clvertalb"); break;
+        default:                                return TABLE_CELL_ERROR;
+    }
+
+    switch(tableCellFormat.textDirection)
+    {
+        case TABLE_CELL_TEXT_DIRECTION_LRTB:        strcat(text, "\\cltxlrtb"); break;
+        case TABLE_CELL_TEXT_DIRECTION_RLTB:        strcat(text, "\\cltxtbrl"); break;
+        case TABLE_CELL_TEXT_DIRECTION_LRBT:        strcat(text, "\\cltxbtlr"); break;
+        case TABLE_CELL_TEXT_DIRECTION_LRTBV:       strcat(text, "\\cltxlrtbv"); break;
+        case TABLE_CELL_TEXT_DIRECTION_RLTBV:       strcat(text, "\\cltxttbrlv"); break;   
+        default:                                    return TABLE_CELL_ERROR;     
+    }
+
+    if(tableCellFormat.borderBottom.hasBorder)
+    {
+        sprintf(text, "\\clbrdrb%s\\brdrw%d\\brsp%d\\brdrcf%d", getBorderName(tableCellFormat.borderBottom.border.type), tableCellFormat.borderBottom.border.width, tableCellFormat.borderBottom.border.space, tableCellFormat.borderBottom.border.color);
+    }
+
+    if(tableCellFormat.borderTop.hasBorder)
+    {
+        sprintf(text, "\\clbrdrt%s\\brdrw%d\\brsp%d\\brdrcf%d", getBorderName(tableCellFormat.borderTop.border.type), tableCellFormat.borderTop.border.width, tableCellFormat.borderTop.border.space, tableCellFormat.borderTop.border.color);
+    }
+
+    if(tableCellFormat.borderLeft.hasBorder)
+    {
+        sprintf(text, "\\clbrdrl%s\\brdrw%d\\brsp%d\\brdrcf%d", getBorderName(tableCellFormat.borderLeft.border.type), tableCellFormat.borderLeft.border.width, tableCellFormat.borderLeft.border.space, tableCellFormat.borderLeft.border.color);
+    }
+
+    if(tableCellFormat.borderRight.hasBorder)
+    {
+        sprintf(text, "\\clbrdrr%s\\brdrw%d\\brsp%d\\brdrcf%d", getBorderName(tableCellFormat.borderRight.border.type), tableCellFormat.borderRight.border.width, tableCellFormat.borderRight.border.space, tableCellFormat.borderRight.border.color);
+    }
+
+    if(tableCellFormat.hasShading)
+    {
+        sprintf(text, "%s\\clshdgn%d\\clcfpat%d\\clcbpat%d", getShadingName(tableCellFormat.shading.type), tableCellFormat.shading.intensity, tableCellFormat.shading.fillColor, tableCellFormat.shading.backgroundColor);
+    }
+
+    sprintf(text, "\\cellx%d", colNum == 0 ? colNum : rightMargin);
+
+    if(fwrite(text, 1, strlen(text), file) < strlen(text))
+    {
+        return TABLE_CELL_ERROR;
+    }
+
     return SUCCESS;
 }
 
@@ -140,6 +194,53 @@ ERROR_TYPE RTFLib::endTableCell()
 
 ERROR_TYPE RTFLib::loadImage(const char* path, int width, int height)
 {
+    FILE* f = fopen(path, "rb");
+    unsigned char info[54];
+
+    if(f == NULL)
+    {
+        return OPEN_ERROR;
+    }
+
+    fread(info, sizeof(unsigned char), 54, f);
+
+    int w = *(int*) &info[18];
+    int h = *(int*) &info[22];
+
+    int size = 3 * w * h;
+
+    unsigned char* data = new unsigned char[size];
+
+    fread(data, sizeof(unsigned char), size, f);
+    fclose(f);
+
+    for(int i = 0; i < size; ++i)
+    {
+        unsigned char tmp = data[i];
+        data[i] = data[i + 2];
+        data[i + 2] = tmp;
+    }
+
+    const char* hex = binaryToHex(data, size);
+    char text[4096];
+
+    sprintf(text, "{\\pict\\picw%d\\pich%d\\picwgoa%d\\pichgoal%d\\pngblip", w, h, width, height);
+
+    if(fwrite(text, 1, strlen(text), file) < strlen(text))
+    {
+        return IMAGE_ERROR;
+    }
+
+    if(fwrite(hex, 1, strlen(hex), file) < strlen(hex))
+    {
+        return IMAGE_ERROR;
+    }
+
+    if(fwrite("}", 1, 1, file) < 1)
+    {
+        return IMAGE_ERROR;
+    }
+
     return SUCCESS;
 }
 
@@ -338,8 +439,152 @@ ERROR_TYPE RTFLib::writeSectionFormat()
     return SUCCESS;
 }  
 
-ERROR_TYPE RTFLib::writeFooterFormat()
+ERROR_TYPE RTFLib::writeHeaderFormat()
 {
+    char text[4096];
+
+    strcat(text, "\\par");
+
+    switch(headerFormat.alignment)
+    {
+        case HEADER_ALIGN_LEFT:         strcat(text, "\\ql"); break;
+        case HEADER_ALIGN_CENTER:       strcat(text, "\\qc"); break;
+        case HEADER_ALIGN_RIGHT:        strcat(text, "\\qr"); break;
+        case HEADER_ALIGN_JUSTIFY:      strcat(text, "\\qj"); break;
+        default:                        return HEADER_ERROR;
+    }
+
+    if(headerFormat.hasTabs)
+    {
+        switch(headerFormat.tabs.kind)
+        {
+            case HEADER_TAB_KIND_NONE:          strcat(text, ""); break;        
+            case HEADER_TAB_KIND_CENTER:        strcat(text, "\\tqc"); break;
+            case HEADER_TAB_KIND_RIGHT:         strcat(text, "\\tqr"); break;
+            case HEADER_TAB_KIND_DECIMAL:       strcat(text, "\\tqdec"); break;
+            default:                            return HEADER_ERROR;
+        }
+
+        switch(headerFormat.tabs.lead)
+        {
+            case HEADER_TAB_LEAD_NONE:          strcat(text, ""); break;
+            case HEADER_TAB_LEAD_DOT:           strcat(text, "\\tldot"); break;
+            case HEADER_TAB_LEAD_MDOT:          strcat(text, "\\tlmdot"); break;
+            case HEADER_TAB_LEAD_HYPH:          strcat(text, "\\tlhyph"); break;
+            case HEADER_TAB_LEAD_UNDERLINE:     strcat(text, "\\tlul"); break;
+            case HEADER_TAB_LEAD_THICKLINE:     strcat(text, "\\tlth"); break;
+            case HEADER_TAB_LEAD_EQUAL:         strcat(text, "\\tleq"); break;
+            default:                            return HEADER_ERROR;
+        }
+
+        sprintf(text, "\\tx%d", headerFormat.tabs.position);
+    }
+
+    if(headerFormat.hasShading)
+    {
+        sprintf(text, "\\shading%d%s\\cfpat%d\\cbpat%d", headerFormat.shading.intensity, getShadingName(headerFormat.shading.type, false), headerFormat.shading.fillColor, headerFormat.shading.backgroundColor);
+    }
+
+    sprintf(text, "\\animtext%d\\expndtw%d\\kerning%d\\charscalex%d\\f%d\\fs%d\\cf%d", headerFormat.character.animated,headerFormat.character.expand, headerFormat.character.kerning, headerFormat.character.scale, headerFormat.character.fontNumber, headerFormat.character.fontSize, headerFormat.character.foregroundColor);
+
+    if(headerFormat.character.isBold)
+    {
+        strcat(text, "\\b");
+    }
+
+    if(headerFormat.character.isCapital)
+    {
+        strcat(text, "\\caps");
+    }
+
+    if(headerFormat.character.isDoubleStrike)
+    {
+        strcat(text, "\\striked");
+    }
+
+    if(headerFormat.character.isEmboss)
+    {
+        strcat(text, "\\embo");
+    }
+
+    if(headerFormat.character.isEngrave)
+    {
+        strcat(text, "\\impr");
+    }
+
+    if(headerFormat.character.isItalic)
+    {
+        strcat(text, "\\i");
+    }
+
+    if(headerFormat.character.isOutline)
+    {
+        strcat(text, "\\outl");
+    }
+
+    if(headerFormat.character.isShadow)
+    {
+        strcat(text, "\\shad");
+    }
+
+    if(headerFormat.character.isSmallCapital)
+    {
+        strcat(text, "\\scaps");
+    }
+
+    if(headerFormat.character.isStrike)
+    {
+        strcat(text, "\\strike");
+    }
+
+    if(headerFormat.character.isSubscript)
+    {
+        strcat(text, "\\sub");
+    }
+
+    if(headerFormat.character.isSuperscript)
+    {
+        strcat(text, "\\super");
+    }
+
+    switch(headerFormat.character.underline)
+    {
+        case UNDERLINE_TYPE_NONE:                   strcat(text, "\\ulnone"); break; 
+        case UNDERLINE_TYPE_CONTINUOUS:             strcat(text, "\\ul"); break;  
+        case UNDERLINE_TYPE_DOT:                    strcat(text, "\\uld"); break;     
+        case UNDERLINE_TYPE_DASH:                   strcat(text, "\\uldash"); break;     
+        case UNDERLINE_TYPE_DASHDOT:                strcat(text, "\\uldashd"); break;     
+        case UNDERLINE_TYPE_DASHDOTDOT:             strcat(text, "\\uldashdd"); break;         
+        case UNDERLINE_TYPE_DOUBLE:                 strcat(text, "\\uldb"); break;         
+        case UNDERLINE_TYPE_HWAVE:                  strcat(text, "\\ulhwave"); break;     
+        case UNDERLINE_TYPE_LDASH:                  strcat(text, "\\ulldash"); break; 
+        case UNDERLINE_TYPE_THICK:                  strcat(text, "\\ulth"); break;     
+        case UNDERLINE_TYPE_THICKDOT:               strcat(text, "\\ulthd"); break; 
+        case UNDERLINE_TYPE_THICKDASH:              strcat(text, "\\ulthdash"); break; 
+        case UNDERLINE_TYPE_THICKDASHDOT:           strcat(text, "\\ulthdashd"); break; 
+        case UNDERLINE_TYPE_THICKDASHDOTDOT:        strcat(text, "\\ulthdashdd"); break;         
+        case UNDERLINE_TYPE_THICKLDASH:             strcat(text, "\\ulthldash"); break;     
+        case UNDERLINE_TYPE_DOUBLEWAVE:             strcat(text, "\\ululdbwave"); break;   
+        case UNDERLINE_TYPE_WORD:                   strcat(text, "\\ulw"); break; 
+        case UNDERLINE_TYPE_WAVE:                   strcat(text, "\\ulwave"); break;     
+        default:                                    return HEADER_ERROR;
+    }
+
+    if(headerFormat.isTabbed)
+    {
+        sprintf(text, " \\tab %s", headerFormat.text);
+    }
+    else
+    {
+        sprintf(text, "\\li%d\\ri%d %s", headerFormat.leftIndent, headerFormat.rightIndent, headerFormat.text);
+    }
+
+    if(fwrite(text, 1, strlen(text), file) < strlen(text))
+    {
+        return HEADER_ERROR;
+    }
+
+
     return SUCCESS;
 }  
 
@@ -530,7 +775,7 @@ ERROR_TYPE RTFLib::writeParagraphFormat()
     }
     else
     {
-        sprintf(text, "\fi%d\\li%d\\ri%d\\sb%d\\sa%d\\sl%d %s", paragraphFormat.firstLineIndent, paragraphFormat.leftIndent, paragraphFormat.rightIndent, paragraphFormat.spaceBefore, paragraphFormat.spaceAfter, paragraphFormat.lineSpacing, paragraphFormat.text);
+        sprintf(text, "\\fi%d\\li%d\\ri%d\\sb%d\\sa%d\\sl%d %s", paragraphFormat.firstLineIndent, paragraphFormat.leftIndent, paragraphFormat.rightIndent, paragraphFormat.spaceBefore, paragraphFormat.spaceAfter, paragraphFormat.lineSpacing, paragraphFormat.text);
     }
 
     if(fwrite(text, 1, strlen(text), file) < strlen(text))
@@ -541,8 +786,151 @@ ERROR_TYPE RTFLib::writeParagraphFormat()
     return SUCCESS;
 }  
 
-ERROR_TYPE RTFLib::writeHeaderFormat()
+ERROR_TYPE RTFLib::writeFooterFormat()
 {
+    char text[4096];
+
+    strcat(text, "\\par");
+
+    switch(footerFormat.alignment)
+    {
+        case HEADER_ALIGN_LEFT:         strcat(text, "\\ql"); break;
+        case HEADER_ALIGN_CENTER:       strcat(text, "\\qc"); break;
+        case HEADER_ALIGN_RIGHT:        strcat(text, "\\qr"); break;
+        case HEADER_ALIGN_JUSTIFY:      strcat(text, "\\qj"); break;
+        default:                        return FOOTER_ERROR;
+    }
+
+    if(footerFormat.hasTabs)
+    {
+        switch(footerFormat.tabs.kind)
+        {
+            case HEADER_TAB_KIND_NONE:          strcat(text, ""); break;        
+            case HEADER_TAB_KIND_CENTER:        strcat(text, "\\tqc"); break;
+            case HEADER_TAB_KIND_RIGHT:         strcat(text, "\\tqr"); break;
+            case HEADER_TAB_KIND_DECIMAL:       strcat(text, "\\tqdec"); break;
+            default:                            return FOOTER_ERROR;
+        }
+
+        switch(footerFormat.tabs.lead)
+        {
+            case HEADER_TAB_LEAD_NONE:          strcat(text, ""); break;
+            case HEADER_TAB_LEAD_DOT:           strcat(text, "\\tldot"); break;
+            case HEADER_TAB_LEAD_MDOT:          strcat(text, "\\tlmdot"); break;
+            case HEADER_TAB_LEAD_HYPH:          strcat(text, "\\tlhyph"); break;
+            case HEADER_TAB_LEAD_UNDERLINE:     strcat(text, "\\tlul"); break;
+            case HEADER_TAB_LEAD_THICKLINE:     strcat(text, "\\tlth"); break;
+            case HEADER_TAB_LEAD_EQUAL:         strcat(text, "\\tleq"); break;
+            default:                            return FOOTER_ERROR;
+        }
+
+        sprintf(text, "\\tx%d", footerFormat.tabs.position);
+    }
+
+    if(footerFormat.hasShading)
+    {
+        sprintf(text, "\\shading%d%s\\cfpat%d\\cbpat%d", footerFormat.shading.intensity, getShadingName(footerFormat.shading.type, false), footerFormat.shading.fillColor, footerFormat.shading.backgroundColor);
+    }
+
+    sprintf(text, "\\animtext%d\\expndtw%d\\kerning%d\\charscalex%d\\f%d\\fs%d\\cf%d", footerFormat.character.animated,footerFormat.character.expand, footerFormat.character.kerning, footerFormat.character.scale, footerFormat.character.fontNumber, footerFormat.character.fontSize, footerFormat.character.foregroundColor);
+
+    if(footerFormat.character.isBold)
+    {
+        strcat(text, "\\b");
+    }
+
+    if(footerFormat.character.isCapital)
+    {
+        strcat(text, "\\caps");
+    }
+
+    if(footerFormat.character.isDoubleStrike)
+    {
+        strcat(text, "\\striked");
+    }
+
+    if(footerFormat.character.isEmboss)
+    {
+        strcat(text, "\\embo");
+    }
+
+    if(footerFormat.character.isEngrave)
+    {
+        strcat(text, "\\impr");
+    }
+
+    if(footerFormat.character.isItalic)
+    {
+        strcat(text, "\\i");
+    }
+
+    if(footerFormat.character.isOutline)
+    {
+        strcat(text, "\\outl");
+    }
+
+    if(footerFormat.character.isShadow)
+    {
+        strcat(text, "\\shad");
+    }
+
+    if(footerFormat.character.isSmallCapital)
+    {
+        strcat(text, "\\scaps");
+    }
+
+    if(footerFormat.character.isStrike)
+    {
+        strcat(text, "\\strike");
+    }
+
+    if(footerFormat.character.isSubscript)
+    {
+        strcat(text, "\\sub");
+    }
+
+    if(footerFormat.character.isSuperscript)
+    {
+        strcat(text, "\\super");
+    }
+
+    switch(footerFormat.character.underline)
+    {
+        case UNDERLINE_TYPE_NONE:                   strcat(text, "\\ulnone"); break; 
+        case UNDERLINE_TYPE_CONTINUOUS:             strcat(text, "\\ul"); break;  
+        case UNDERLINE_TYPE_DOT:                    strcat(text, "\\uld"); break;     
+        case UNDERLINE_TYPE_DASH:                   strcat(text, "\\uldash"); break;     
+        case UNDERLINE_TYPE_DASHDOT:                strcat(text, "\\uldashd"); break;     
+        case UNDERLINE_TYPE_DASHDOTDOT:             strcat(text, "\\uldashdd"); break;         
+        case UNDERLINE_TYPE_DOUBLE:                 strcat(text, "\\uldb"); break;         
+        case UNDERLINE_TYPE_HWAVE:                  strcat(text, "\\ulhwave"); break;     
+        case UNDERLINE_TYPE_LDASH:                  strcat(text, "\\ulldash"); break; 
+        case UNDERLINE_TYPE_THICK:                  strcat(text, "\\ulth"); break;     
+        case UNDERLINE_TYPE_THICKDOT:               strcat(text, "\\ulthd"); break; 
+        case UNDERLINE_TYPE_THICKDASH:              strcat(text, "\\ulthdash"); break; 
+        case UNDERLINE_TYPE_THICKDASHDOT:           strcat(text, "\\ulthdashd"); break; 
+        case UNDERLINE_TYPE_THICKDASHDOTDOT:        strcat(text, "\\ulthdashdd"); break;         
+        case UNDERLINE_TYPE_THICKLDASH:             strcat(text, "\\ulthldash"); break;     
+        case UNDERLINE_TYPE_DOUBLEWAVE:             strcat(text, "\\ululdbwave"); break;   
+        case UNDERLINE_TYPE_WORD:                   strcat(text, "\\ulw"); break; 
+        case UNDERLINE_TYPE_WAVE:                   strcat(text, "\\ulwave"); break;     
+        default:                                    return FOOTER_ERROR;
+    }
+
+    if(footerFormat.isTabbed)
+    {
+        sprintf(text, " \\tab %s", footerFormat.text);
+    }
+    else
+    {
+        sprintf(text, "\\li%d\\ri%d %s", footerFormat.leftIndent, footerFormat.rightIndent, footerFormat.text);
+    }
+
+    if(fwrite(text, 1, strlen(text), file) < strlen(text))
+    {
+        return FOOTER_ERROR;
+    }
+
     return SUCCESS;
 }  
 
