@@ -338,13 +338,206 @@ ERROR_TYPE RTFLib::writeSectionFormat()
     return SUCCESS;
 }  
 
-ERROR_TYPE RTFLib::writeParagraphFormat()
+ERROR_TYPE RTFLib::writeFooterFormat()
 {
     return SUCCESS;
 }  
 
-ERROR_TYPE RTFLib::writeFooterFormat()
+ERROR_TYPE RTFLib::writeParagraphFormat()
 {
+    char text[4096];
+
+    strcat(text, "\n");
+
+    if(paragraphFormat.isNew)
+    {
+        strcat(text, "\\par");
+    }
+
+    if(paragraphFormat.isDefault)
+    {
+        strcat(text, "\\pard");
+    }
+
+    if(paragraphFormat.isInTable)
+    {
+        strcat(text, "\\intbl");
+    }
+    else
+    {
+        strcat(text, "\\plain");
+    }
+
+    switch(paragraphFormat.breakType)
+    {
+        case PARAGRAPH_BREAK_NONE:      strcat(text, ""); break;      
+        case PARAGRAPH_BREAK_PAGE:      strcat(text, "\\page"); break;
+        case PARAGRAPH_BREAK_COLUMN:    strcat(text, "\\column"); break;
+        case PARAGRAPH_BREAK_LINE:      strcat(text, "\\line"); break;
+        default:                        return PARAGRAPH_FORMAT_ERROR;      
+    }
+
+    switch(paragraphFormat.alignment)
+    {
+        case PARAGRAPH_ALIGN_LEFT:      strcat(text, "\\ql"); break;        
+        case PARAGRAPH_ALIGN_CENTER:    strcat(text, "\\qc"); break; 
+        case PARAGRAPH_ALIGN_RIGHT:     strcat(text, "\\qr"); break; 
+        case PARAGRAPH_ALIGN_JUSTIFY:   strcat(text, "\\qj"); break; 
+        default:                        return PARAGRAPH_FORMAT_ERROR;      
+    }
+
+    if(paragraphFormat.hasTabs)
+    {
+        switch(paragraphFormat.tabs.kind)
+        {
+            case PARAGRAPH_TAB_KIND_NONE:       strcat(text, ""); break;        
+            case PARAGRAPH_TAB_KIND_CENTER:     strcat(text, "\\tqc"); break;
+            case PARAGRAPH_TAB_KIND_RIGHT:      strcat(text, "\\tqr"); break;
+            case PARAGRAPH_TAB_KIND_DECIMAL:    strcat(text, "\\tqdec"); break;
+            default:                            return PARAGRAPH_FORMAT_ERROR;
+        }
+
+        switch(paragraphFormat.tabs.lead)
+        {
+            case PARAGRAPH_TAB_LEAD_NONE:           strcat(text, ""); break;
+            case PARAGRAPH_TAB_LEAD_DOT:            strcat(text, "\\tldot"); break;
+            case PARAGRAPH_TAB_LEAD_MDOT:           strcat(text, "\\tlmdot"); break;
+            case PARAGRAPH_TAB_LEAD_HYPH:           strcat(text, "\\tlhyph"); break;
+            case PARAGRAPH_TAB_LEAD_UNDERLINE:      strcat(text, "\\tlul"); break;
+            case PARAGRAPH_TAB_LEAD_THICKLINE:      strcat(text, "\\tlth"); break;
+            case PARAGRAPH_TAB_LEAD_EQUAL:          strcat(text, "\\tleq"); break;
+            default:                                return PARAGRAPH_FORMAT_ERROR;
+        }
+
+        sprintf(text, "\\tx%d", paragraphFormat.tabs.position);
+    }
+
+    if(paragraphFormat.hasNums)
+    {
+        sprintf(text, "{\\*\\pn\\pnlvl%d\\pnsp%d\\pntxtb %c}", paragraphFormat.nums.level, paragraphFormat.nums.space, paragraphFormat.nums.charNum);
+    }
+
+    if(paragraphFormat.hasBorders)
+    {
+        switch(paragraphFormat.borders.kind)
+        {
+            case PARAGRAPH_BORDER_KIND_NONE:    strcat(text, ""); break; 
+            case PARAGRAPH_BORDER_KIND_TOP:     strcat(text, "\\brdrt"); break; 
+            case PARAGRAPH_BORDER_KIND_BOTTOM:  strcat(text, "\\brdrb"); break; 
+            case PARAGRAPH_BORDER_KIND_LEFT:    strcat(text, "\\brdrl"); break; 
+            case PARAGRAPH_BORDER_KIND_RIGHT:   strcat(text, "\\brdrr"); break; 
+            case PARAGRAPH_BORDER_KIND_BOX:     strcat(text, "\\box"); break; 
+            default:                    return PARAGRAPH_FORMAT_ERROR;
+        }
+
+        strcat(text, getBorderName(paragraphFormat.borders.type));
+        sprintf(text, "\\brdrw%d\\brsp%d\\brdrcf%d", paragraphFormat.borders.width, paragraphFormat.borders.space, paragraphFormat.borders.color);
+    }
+
+    if(paragraphFormat.hasShading)
+    {
+        sprintf(text, "\\shading%d%s\\cfpat%d\\cbpat%d", paragraphFormat.shading.intensity, getShadingName(paragraphFormat.shading.type, false), paragraphFormat.shading.fillColor, paragraphFormat.shading.backgroundColor);
+    }
+
+    sprintf(text, "\\animtext%d\\expndtw%d\\kerning%d\\charscalex%d\\f%d\\fs%d\\cf%d", paragraphFormat.character.animated,paragraphFormat.character.expand, paragraphFormat.character.kerning, paragraphFormat.character.scale, paragraphFormat.character.fontNumber, paragraphFormat.character.fontSize, paragraphFormat.character.foregroundColor);
+
+    if(paragraphFormat.character.isBold)
+    {
+        strcat(text, "\\b");
+    }
+
+    if(paragraphFormat.character.isCapital)
+    {
+        strcat(text, "\\caps");
+    }
+
+    if(paragraphFormat.character.isDoubleStrike)
+    {
+        strcat(text, "\\striked");
+    }
+
+    if(paragraphFormat.character.isEmboss)
+    {
+        strcat(text, "\\embo");
+    }
+
+    if(paragraphFormat.character.isEngrave)
+    {
+        strcat(text, "\\impr");
+    }
+
+    if(paragraphFormat.character.isItalic)
+    {
+        strcat(text, "\\i");
+    }
+
+    if(paragraphFormat.character.isOutline)
+    {
+        strcat(text, "\\outl");
+    }
+
+    if(paragraphFormat.character.isShadow)
+    {
+        strcat(text, "\\shad");
+    }
+
+    if(paragraphFormat.character.isSmallCapital)
+    {
+        strcat(text, "\\scaps");
+    }
+
+    if(paragraphFormat.character.isStrike)
+    {
+        strcat(text, "\\strike");
+    }
+
+    if(paragraphFormat.character.isSubscript)
+    {
+        strcat(text, "\\sub");
+    }
+
+    if(paragraphFormat.character.isSuperscript)
+    {
+        strcat(text, "\\super");
+    }
+
+    switch(paragraphFormat.character.underline)
+    {
+        case UNDERLINE_TYPE_NONE:                   strcat(text, "\\ulnone"); break; 
+        case UNDERLINE_TYPE_CONTINUOUS:             strcat(text, "\\ul"); break;  
+        case UNDERLINE_TYPE_DOT:                    strcat(text, "\\uld"); break;     
+        case UNDERLINE_TYPE_DASH:                   strcat(text, "\\uldash"); break;     
+        case UNDERLINE_TYPE_DASHDOT:                strcat(text, "\\uldashd"); break;     
+        case UNDERLINE_TYPE_DASHDOTDOT:             strcat(text, "\\uldashdd"); break;         
+        case UNDERLINE_TYPE_DOUBLE:                 strcat(text, "\\uldb"); break;         
+        case UNDERLINE_TYPE_HWAVE:                  strcat(text, "\\ulhwave"); break;     
+        case UNDERLINE_TYPE_LDASH:                  strcat(text, "\\ulldash"); break; 
+        case UNDERLINE_TYPE_THICK:                  strcat(text, "\\ulth"); break;     
+        case UNDERLINE_TYPE_THICKDOT:               strcat(text, "\\ulthd"); break; 
+        case UNDERLINE_TYPE_THICKDASH:              strcat(text, "\\ulthdash"); break; 
+        case UNDERLINE_TYPE_THICKDASHDOT:           strcat(text, "\\ulthdashd"); break; 
+        case UNDERLINE_TYPE_THICKDASHDOTDOT:        strcat(text, "\\ulthdashdd"); break;         
+        case UNDERLINE_TYPE_THICKLDASH:             strcat(text, "\\ulthldash"); break;     
+        case UNDERLINE_TYPE_DOUBLEWAVE:             strcat(text, "\\ululdbwave"); break;   
+        case UNDERLINE_TYPE_WORD:                   strcat(text, "\\ulw"); break; 
+        case UNDERLINE_TYPE_WAVE:                   strcat(text, "\\ulwave"); break;     
+        default:                                    return PARAGRAPH_FORMAT_ERROR;
+    }
+
+    if(paragraphFormat.isTabbed)
+    {
+        sprintf(text, " \\tab %s", paragraphFormat.text);
+    }
+    else
+    {
+        sprintf(text, "\fi%d\\li%d\\ri%d\\sb%d\\sa%d\\sl%d %s", paragraphFormat.firstLineIndent, paragraphFormat.leftIndent, paragraphFormat.rightIndent, paragraphFormat.spaceBefore, paragraphFormat.spaceAfter, paragraphFormat.lineSpacing, paragraphFormat.text);
+    }
+
+    if(fwrite(text, 1, strlen(text), file) < strlen(text))
+    {
+        return PARAGRAPH_FORMAT_ERROR;
+    }
+
     return SUCCESS;
 }  
 
@@ -412,7 +605,7 @@ void RTFLib::setDefaultFormats()
     pf.shading = { 0, PARAGRAPH_SHADING_TYPE_FILL, 0, 0 };
     pf.nums = { 11, 360, char(0x95) };
     pf.borders = { PARAGRAPH_BORDER_KIND_NONE, PARAGRAPH_BORDER_TYPE_STHICK, 0, 0, 0 };
-    pf.character = { 0, 0, 100, 0, 24, 0, 0, false, false, false, false, false, false, false, false, false, false, false, false, false };
+    pf.character = { 0, 0, 0, 100, 0, 24, 0, 0, false, false, false, false, false, false, false, false, false, false, false, false };
 
     TABLE_ROW_FORMAT trf = { TABLE_ROW_TEXT_ALIGN_LEFT, 0, 0, 0, 0, 0, 0 };
 
@@ -430,12 +623,12 @@ void RTFLib::setDefaultFormats()
     FOOTER_FORMAT ff = { FOOTER_ALIGN_LEFT, 0, 0, "", false, false, false };
     ff.tabs = { 0, PARAGRAPH_TAB_KIND_NONE, PARAGRAPH_TAB_LEAD_NONE };
     ff.shading = { 0, PARAGRAPH_SHADING_TYPE_FILL, 0, 0 };
-    ff.character = { 0, 0, 100, 0, 24, 0, 0, false, false, false, false, false, false, false, false, false, false, false, false, false };
+    ff.character = { 0, 0, 0, 100, 0, 24, 0, 0, false, false, false, false, false, false, false, false, false, false, false, false };
 
     HEADER_FORMAT hf = { FOOTER_ALIGN_LEFT, 0, 0, "", false, false, false };
     hf.tabs = { 0, PARAGRAPH_TAB_KIND_NONE, PARAGRAPH_TAB_LEAD_NONE };
     hf.shading = { 0, PARAGRAPH_SHADING_TYPE_FILL, 0, 0 };
-    hf.character = { 0, 0, 100, 0, 24, 0, 0, false, false, false, false, false, false, false, false, false, false, false, false, false };
+    hf.character = { 0, 0, 0, 100, 0, 24, 0, 0, false, false, false, false, false, false, false, false, false, false, false, false };
 
     setDocumentFormat(df);
     setSectionFormat(sf);

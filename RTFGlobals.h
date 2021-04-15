@@ -183,3 +183,23 @@
 #define FOOTER_SHADING_TYPE_DCROSS		        11
 #define FOOTER_SHADING_TYPE_DCROSSD	            12
 
+
+//UNDERLINE TYPE GLOBAL DEFINITIONS
+#define UNDERLINE_TYPE_NONE                     0
+#define UNDERLINE_TYPE_CONTINUOUS               1
+#define UNDERLINE_TYPE_DOT                      2
+#define UNDERLINE_TYPE_DASH                     3
+#define UNDERLINE_TYPE_DASHDOT                  4
+#define UNDERLINE_TYPE_DASHDOTDOT               5
+#define UNDERLINE_TYPE_DOUBLE                   6
+#define UNDERLINE_TYPE_HWAVE                    7
+#define UNDERLINE_TYPE_LDASH                    8
+#define UNDERLINE_TYPE_THICK                    9
+#define UNDERLINE_TYPE_THICKDOT                 10
+#define UNDERLINE_TYPE_THICKDASH                11
+#define UNDERLINE_TYPE_THICKDASHDOT             12
+#define UNDERLINE_TYPE_THICKDASHDOTDOT          13
+#define UNDERLINE_TYPE_THICKLDASH               14
+#define UNDERLINE_TYPE_DOUBLEWAVE               15
+#define UNDERLINE_TYPE_WORD                     16
+#define UNDERLINE_TYPE_WAVE                     17

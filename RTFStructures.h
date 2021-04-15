@@ -39,7 +39,7 @@ struct TAB_FORMAT
 {
     int position;
     int kind;
-    int level;
+    int lead;
 };
 
 struct NUM_FORMAT
@@ -69,6 +69,7 @@ struct SHADING_FORMAT
 
 struct CHARACTER_FORMAT
 {
+    int animated;
     int backgroundColor;
     int foregroundColor;
     int scale;
@@ -78,7 +79,6 @@ struct CHARACTER_FORMAT
     int kerning;
     int underline;
 
-    bool isAnimated;
     bool isBold;
     bool isCapital;
     bool isEmboss;
